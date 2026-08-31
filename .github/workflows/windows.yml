@@ -1,0 +1,54 @@
+name: Windows Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Release MSIX (x64)
+    runs-on: windows-latest
+    timeout-minutes: 60
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Autolink native modules
+        run: npx react-native autolink-windows
+
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2
+        with:
+          msbuild-architecture: x64
+
+      # Unsigned sideload package: install via Add-AppxPackage after enabling
+      # Developer Mode (or re-sign with your own cert before distribution).
+      - name: Build solution (Release x64)
+        run: >
+          msbuild windows\AnimateLR.sln /m /restore
+          /p:Configuration=Release
+          /p:Platform=x64
+          /p:AppxBundle=Always
+          /p:AppxBundlePlatforms=x64
+          /p:UapAppxPackageBuildMode=SideloadOnly
+          /p:AppxPackageSigningEnabled=false
+
+      - name: Upload MSIX artifact (kept 7 days)
+        uses: actions/upload-artifact@v4
+        with:
+          name: animatelr-windows-msix
+          path: windows/AnimateLR.Package/AppPackages/**/*.msix
+          retention-days: 7
+          if-no-files-found: error
