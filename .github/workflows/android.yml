@@ -34,6 +34,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      # Exec bits can be lost when files are transferred to GitHub
+      # (zip downloads, web uploads, Windows checkouts). Re-assert it.
+      - name: Ensure gradlew is executable
+        run: chmod +x android/gradlew
+
       - name: Build release APK
         working-directory: android
         run: ./gradlew assembleRelease --no-daemon
