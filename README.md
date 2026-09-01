@@ -74,5 +74,3 @@ Full detail: [`docs/PHASES.md`](docs/PHASES.md).
 ## License
 
 MIT — see [LICENSE](LICENSE).
-# Animate-
-# Animate-
