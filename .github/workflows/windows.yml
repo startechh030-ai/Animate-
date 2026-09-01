@@ -9,7 +9,10 @@ on:
 jobs:
   build:
     name: Release MSIX (x64)
-    runs-on: windows-latest
+    # Pin to VS2022: windows-latest now runs Visual Studio 2026, which no
+    # longer ships the v143 UWP C++ toolset that RNW 0.84 (and RNSVG)
+    # projects require (MSB8020). See actions/runner-images#14017.
+    runs-on: windows-2022
     timeout-minutes: 60
 
     steps:
@@ -35,6 +38,12 @@ jobs:
 
       # Unsigned sideload package: install via Add-AppxPackage after enabling
       # Developer Mode (or re-sign with your own cert before distribution).
+      #
+      # WindowsAppSDKVerifyTransitiveDependencies=false — WinAppSDK 1.8's
+      # transitive-dependency check false-positives on old-style module
+      # projects (RNScreens/RNSVG) that get the SDK transitively via RNW's
+      # property sheets. The check is advisory; suppression is the documented
+      # workaround (see the error text itself).
       - name: Build solution (Release x64)
         run: >
           msbuild windows\AnimateLR.sln /m /restore
@@ -44,6 +53,7 @@ jobs:
           /p:AppxBundlePlatforms=x64
           /p:UapAppxPackageBuildMode=SideloadOnly
           /p:AppxPackageSigningEnabled=false
+          /p:WindowsAppSDKVerifyTransitiveDependencies=false
 
       - name: Upload MSIX artifact (kept 7 days)
         uses: actions/upload-artifact@v4
